@@ -1,0 +1,37 @@
+services:
+  cms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "1337:1337"
+    volumes:
+      - cms-data:/app/.tmp
+      - cms-uploads:/app/public/uploads
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=1337
+      - APP_KEYS=${APP_KEYS}
+      - API_TOKEN_SALT=${API_TOKEN_SALT}
+      - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET}
+      - TRANSFER_TOKEN_SALT=${TRANSFER_TOKEN_SALT}
+      - JWT_SECRET=${JWT_SECRET}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_STRAPI_URL=http://cms:1337
+      - NODE_ENV=production
+    depends_on:
+      - cms
+
+volumes:
+  cms-data:
+  cms-uploads:

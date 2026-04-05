@@ -3,24 +3,26 @@
 const fs = require('fs-extra');
 const path = require('path');
 const mime = require('mime-types');
-const { categories, authors, articles, global, about } = require('../data/data.json');
 
-async function seedExampleApp() {
+const BLOG_OUTPUT_DIR = path.join(__dirname, '..', 'blog_output');
+const ARTICLES_DIR = path.join(BLOG_OUTPUT_DIR, 'articles');
+const COVER_IMAGES_DIR = path.join(BLOG_OUTPUT_DIR, 'cover_images');
+
+async function seedCasonaTexao() {
   const shouldImportSeedData = await isFirstRun();
 
-  if (shouldImportSeedData) {
-    try {
-      console.log('Setting up the template...');
-      await importSeedData();
-      console.log('Ready to go');
-    } catch (error) {
-      console.log('Could not import seed data');
-      console.error(error);
-    }
-  } else {
-    console.log(
-      'Seed data has already been imported. We cannot reimport unless you clear your database first.'
-    );
+  if (!shouldImportSeedData) {
+    console.log('Seed data has already been imported. Clear your database to reimport.');
+    return;
+  }
+
+  try {
+    console.log('Setting up Casona Texao...');
+    await importSeedData();
+    console.log('Seed complete!');
+  } catch (error) {
+    console.log('Could not import seed data');
+    console.error(error);
   }
 }
 
@@ -36,14 +38,10 @@ async function isFirstRun() {
 }
 
 async function setPublicPermissions(newPermissions) {
-  // Find the ID of the public role
   const publicRole = await strapi.query('plugin::users-permissions.role').findOne({
-    where: {
-      type: 'public',
-    },
+    where: { type: 'public' },
   });
 
-  // Create the new permissions and link them to the public role
   const allPermissionsToCreate = [];
   Object.keys(newPermissions).map((controller) => {
     const actions = newPermissions[controller];
@@ -60,197 +58,287 @@ async function setPublicPermissions(newPermissions) {
   await Promise.all(allPermissionsToCreate);
 }
 
-function getFileSizeInBytes(filePath) {
+async function uploadFile(filePath, name) {
   const stats = fs.statSync(filePath);
-  const fileSizeInBytes = stats['size'];
-  return fileSizeInBytes;
-}
+  const ext = path.extname(filePath).slice(1);
+  const mimeType = mime.lookup(ext) || 'application/octet-stream';
 
-function getFileData(fileName) {
-  const filePath = path.join('data', 'uploads', fileName);
-  // Parse the file metadata
-  const size = getFileSizeInBytes(filePath);
-  const ext = fileName.split('.').pop();
-  const mimeType = mime.lookup(ext || '') || '';
-
-  return {
+  const fileData = {
     filepath: filePath,
-    originalFileName: fileName,
-    size,
+    originalFileName: path.basename(filePath),
+    size: stats.size,
     mimetype: mimeType,
   };
-}
 
-async function uploadFile(file, name) {
-  return strapi
-    .plugin('upload')
-    .service('upload')
-    .upload({
-      files: file,
-      data: {
-        fileInfo: {
-          alternativeText: `An image uploaded to Strapi called ${name}`,
-          caption: name,
-          name,
-        },
-      },
-    });
-}
-
-// Create an entry and attach files if there are any
-async function createEntry({ model, entry }) {
-  try {
-    // Actually create the entry in Strapi
-    await strapi.documents(`api::${model}.${model}`).create({
-      data: entry,
-    });
-  } catch (error) {
-    console.error({ model, entry, error });
-  }
-}
-
-async function checkFileExistsBeforeUpload(files) {
-  const existingFiles = [];
-  const uploadedFiles = [];
-  const filesCopy = [...files];
-
-  for (const fileName of filesCopy) {
-    // Check if the file already exists in Strapi
-    const fileWhereName = await strapi.query('plugin::upload.file').findOne({
-      where: {
-        name: fileName.replace(/\..*$/, ''),
-      },
-    });
-
-    if (fileWhereName) {
-      // File exists, don't upload it
-      existingFiles.push(fileWhereName);
-    } else {
-      // File doesn't exist, upload it
-      const fileData = getFileData(fileName);
-      const fileNameNoExtension = fileName.split('.').shift();
-      const [file] = await uploadFile(fileData, fileNameNoExtension);
-      uploadedFiles.push(file);
-    }
-  }
-  const allFiles = [...existingFiles, ...uploadedFiles];
-  // If only one file then return only that file
-  return allFiles.length === 1 ? allFiles[0] : allFiles;
-}
-
-async function updateBlocks(blocks) {
-  const updatedBlocks = [];
-  for (const block of blocks) {
-    if (block.__component === 'shared.media') {
-      const uploadedFiles = await checkFileExistsBeforeUpload([block.file]);
-      // Copy the block to not mutate directly
-      const blockCopy = { ...block };
-      // Replace the file name on the block with the actual file
-      blockCopy.file = uploadedFiles;
-      updatedBlocks.push(blockCopy);
-    } else if (block.__component === 'shared.slider') {
-      // Get files already uploaded to Strapi or upload new files
-      const existingAndUploadedFiles = await checkFileExistsBeforeUpload(block.files);
-      // Copy the block to not mutate directly
-      const blockCopy = { ...block };
-      // Replace the file names on the block with the actual files
-      blockCopy.files = existingAndUploadedFiles;
-      // Push the updated block
-      updatedBlocks.push(blockCopy);
-    } else {
-      // Just push the block as is
-      updatedBlocks.push(block);
-    }
-  }
-
-  return updatedBlocks;
-}
-
-async function importArticles() {
-  for (const article of articles) {
-    const cover = await checkFileExistsBeforeUpload([`${article.slug}.jpg`]);
-    const updatedBlocks = await updateBlocks(article.blocks);
-
-    await createEntry({
-      model: 'article',
-      entry: {
-        ...article,
-        cover,
-        blocks: updatedBlocks,
-        // Make sure it's not a draft
-        publishedAt: Date.now(),
-      },
-    });
-  }
-}
-
-async function importGlobal() {
-  const favicon = await checkFileExistsBeforeUpload(['favicon.png']);
-  const shareImage = await checkFileExistsBeforeUpload(['default-image.png']);
-  return createEntry({
-    model: 'global',
-    entry: {
-      ...global,
-      favicon,
-      // Make sure it's not a draft
-      publishedAt: Date.now(),
-      defaultSeo: {
-        ...global.defaultSeo,
-        shareImage,
+  const [uploaded] = await strapi.plugin('upload').service('upload').upload({
+    files: fileData,
+    data: {
+      fileInfo: {
+        alternativeText: name,
+        caption: name,
+        name,
       },
     },
   });
+
+  return uploaded;
 }
 
-async function importAbout() {
-  const updatedBlocks = await updateBlocks(about.blocks);
+function parseMarkdownArticle(filePath) {
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!frontmatterMatch) return null;
 
-  await createEntry({
-    model: 'about',
-    entry: {
-      ...about,
-      blocks: updatedBlocks,
-      // Make sure it's not a draft
-      publishedAt: Date.now(),
-    },
-  });
+  const frontmatter = frontmatterMatch[1];
+  const body = frontmatterMatch[2].trim();
+
+  const meta = {};
+  for (const line of frontmatter.split('\n')) {
+    const match = line.match(/^(\w[\w_]*)\s*:\s*(.*)$/);
+    if (match) {
+      let value = match[2].trim();
+      // Remove surrounding quotes
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      // Parse arrays
+      if (value.startsWith('[') && value.endsWith(']')) {
+        value = value.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).join(', ');
+      }
+      meta[match[1]] = value;
+    }
+  }
+
+  return { ...meta, body };
+}
+
+function markdownToHtml(md) {
+  // Basic markdown to HTML conversion
+  let html = md;
+
+  // Headers
+  html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+
+  // Bold and italic
+  html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Lists
+  html = html.replace(/^\- (.*$)/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  // Paragraphs - wrap non-tagged lines
+  const lines = html.split('\n\n');
+  html = lines.map(line => {
+    line = line.trim();
+    if (!line) return '';
+    if (line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<ol') || line.startsWith('<blockquote')) {
+      return line;
+    }
+    return `<p>${line}</p>`;
+  }).join('\n\n');
+
+  return html;
 }
 
 async function importCategories() {
-  for (const category of categories) {
-    await createEntry({ model: 'category', entry: category });
+  // Collect unique categories from markdown articles
+  const categorySet = new Set();
+  const files = fs.readdirSync(ARTICLES_DIR).filter(f => f.endsWith('.md'));
+
+  for (const file of files) {
+    const article = parseMarkdownArticle(path.join(ARTICLES_DIR, file));
+    if (article && article.category) {
+      categorySet.add(article.category);
+    }
   }
-}
 
-async function importAuthors() {
-  for (const author of authors) {
-    const avatar = await checkFileExistsBeforeUpload([author.avatar]);
+  // Also add the three main categories from the plan
+  categorySet.add('Charlas');
+  categorySet.add('Teatro');
+  categorySet.add('Eventos Culturales');
 
-    await createEntry({
-      model: 'author',
-      entry: {
-        ...author,
-        avatar,
+  const categoryMap = {};
+  for (const name of categorySet) {
+    const slug = name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const entry = await strapi.documents('api::category.category').create({
+      data: {
+        name,
+        slug,
+        description: `Artículos sobre ${name}`,
       },
     });
+    categoryMap[name] = entry;
+    console.log(`  Category: ${name}`);
   }
+
+  return categoryMap;
+}
+
+async function importArticles(categoryMap) {
+  const files = fs.readdirSync(ARTICLES_DIR).filter(f => f.endsWith('.md')).sort();
+  let imported = 0;
+
+  for (const file of files) {
+    const filePath = path.join(ARTICLES_DIR, file);
+    const article = parseMarkdownArticle(filePath);
+    if (!article) {
+      console.log(`  Skipping ${file}: could not parse`);
+      continue;
+    }
+
+    const htmlContent = markdownToHtml(article.body);
+
+    // Find matching cover image
+    const filePrefix = file.replace('.md', '');
+    const coverImagePath = path.join(COVER_IMAGES_DIR, `${filePrefix}.png`);
+
+    let cover = null;
+    if (fs.existsSync(coverImagePath)) {
+      try {
+        cover = await uploadFile(coverImagePath, article.title || filePrefix);
+      } catch (err) {
+        console.log(`  Warning: Could not upload cover for ${file}: ${err.message}`);
+      }
+    }
+
+    // Find category
+    const category = article.category && categoryMap[article.category]
+      ? categoryMap[article.category]
+      : null;
+
+    const entryData = {
+      title: article.title || filePrefix,
+      slug: article.slug || filePrefix,
+      content: htmlContent,
+      excerpt: article.excerpt || '',
+      metaDescription: article.meta_description || '',
+      tags: article.tags || '',
+      publishedAt: article.date ? new Date(article.date).toISOString() : new Date().toISOString(),
+    };
+
+    if (cover) {
+      entryData.cover = cover.id;
+    }
+    if (category) {
+      entryData.category = category.id;
+    }
+
+    try {
+      await strapi.documents('api::article.article').create({
+        data: entryData,
+        status: 'published',
+      });
+      imported++;
+      console.log(`  Article ${imported}: ${entryData.title.substring(0, 60)}...`);
+    } catch (error) {
+      console.error(`  Error importing ${file}:`, error.message);
+    }
+  }
+
+  console.log(`Imported ${imported} articles.`);
+}
+
+async function importSiteConfig() {
+  await strapi.documents('api::site-config.site-config').create({
+    data: {
+      whatsappNumber: '51999999999',
+      whatsappMessage: 'Hola, me gustaría obtener información sobre los eventos de Casona Texao.',
+      address: 'Calle Puente Grau 108, Cercado, Arequipa, Perú',
+      googleMapsPlaceId: 'ChIJZXT4EQBLQpERst-1U1zGOr4',
+      tagline: 'Donde convergen el arte, la cultura y la música',
+      socialFacebook: 'https://www.facebook.com/casonatexao',
+      socialInstagram: 'https://www.instagram.com/casonatexao',
+    },
+  });
+  console.log('  Site config created');
+}
+
+async function importGlobal() {
+  const faviconPath = path.join(__dirname, '..', 'favicon.png');
+  let favicon = null;
+  if (fs.existsSync(faviconPath)) {
+    favicon = await uploadFile(faviconPath, 'favicon');
+  }
+
+  const entryData = {
+    siteName: 'Casona Texao',
+    siteDescription: 'Centro Cultural Casona Texao - Donde convergen el arte, la cultura y la música en Arequipa, Perú.',
+    publishedAt: new Date().toISOString(),
+  };
+  if (favicon) {
+    entryData.favicon = favicon.id;
+  }
+
+  await strapi.documents('api::global.global').create({
+    data: entryData,
+  });
+  console.log('  Global settings created');
+}
+
+async function importAbout() {
+  await strapi.documents('api::about.about').create({
+    data: {
+      title: 'Sobre Casona Texao',
+      blocks: [
+        {
+          __component: 'shared.rich-text',
+          body: `<h2>Nuestra Historia</h2>
+<p>La Casona Texao es un espacio cultural ubicado en el corazón del Centro Histórico de Arequipa, en la emblemática Calle Puente Grau 108. Reconocida como Punto de Cultura por el Ministerio de Cultura del Perú, nuestra misión es democratizar el acceso al arte y la cultura.</p>
+
+<h2>Nuestra Misión</h2>
+<p>Promover el desarrollo cultural y artístico de Arequipa a través de charlas, teatro, música, festivales y eventos que celebren nuestra identidad y patrimonio.</p>
+
+<h2>Nuestra Visión</h2>
+<p>Ser el centro cultural de referencia en el sur del Perú, donde artistas, gestores culturales y la comunidad converjan para crear, aprender y transformar.</p>
+
+<h2>Nuestros Valores</h2>
+<p>Inclusión, creatividad, compromiso comunitario, respeto por el patrimonio y pasión por las artes.</p>`,
+        },
+      ],
+      publishedAt: new Date().toISOString(),
+    },
+  });
+  console.log('  About page created');
 }
 
 async function importSeedData() {
-  // Allow read of application content types
+  // Set public read permissions
   await setPublicPermissions({
     article: ['find', 'findOne'],
     category: ['find', 'findOne'],
-    author: ['find', 'findOne'],
-    global: ['find', 'findOne'],
-    about: ['find', 'findOne'],
+    'about': ['find', 'findOne'],
+    'global': ['find', 'findOne'],
+    'page': ['find', 'findOne'],
+    'site-config': ['find', 'findOne'],
   });
+  console.log('Public permissions set.');
 
-  // Create all entries
-  await importCategories();
-  await importAuthors();
-  await importArticles();
+  // Import categories
+  console.log('Importing categories...');
+  const categoryMap = await importCategories();
+
+  // Import articles from markdown files
+  console.log('Importing articles...');
+  await importArticles(categoryMap);
+
+  // Import site config
+  console.log('Importing site config...');
+  await importSiteConfig();
+
+  // Import global settings
+  console.log('Importing global settings...');
   await importGlobal();
+
+  // Import about page
+  console.log('Importing about page...');
   await importAbout();
 }
 
@@ -262,7 +350,7 @@ async function main() {
 
   app.log.level = 'error';
 
-  await seedExampleApp();
+  await seedCasonaTexao();
   await app.destroy();
 
   process.exit(0);

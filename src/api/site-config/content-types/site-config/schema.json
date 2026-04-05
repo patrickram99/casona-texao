@@ -1,0 +1,41 @@
+{
+  "kind": "singleType",
+  "collectionName": "site_configs",
+  "info": {
+    "singularName": "site-config",
+    "pluralName": "site-configs",
+    "displayName": "Site Config",
+    "description": "Global site configuration"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "whatsappNumber": {
+      "type": "string",
+      "required": true
+    },
+    "whatsappMessage": {
+      "type": "text"
+    },
+    "address": {
+      "type": "string"
+    },
+    "googleMapsPlaceId": {
+      "type": "string"
+    },
+    "socialFacebook": {
+      "type": "string"
+    },
+    "socialInstagram": {
+      "type": "string"
+    },
+    "socialYoutube": {
+      "type": "string"
+    },
+    "tagline": {
+      "type": "string"
+    }
+  }
+}
