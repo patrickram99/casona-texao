@@ -3,7 +3,7 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache python3 make g++ vips-dev
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 FROM node:20-alpine AS builder
 RUN apk add --no-cache vips-dev
