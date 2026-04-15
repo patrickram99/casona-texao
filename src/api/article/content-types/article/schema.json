@@ -50,9 +50,25 @@
     "tags": {
       "type": "text"
     },
+    "eventDate": {
+      "type": "date"
+    },
+    "eventTime": {
+      "type": "time"
+    },
     "blocks": {
       "type": "dynamiczone",
       "components": ["shared.media", "shared.quote", "shared.rich-text", "shared.slider"]
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "featuredImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
     }
   }
 }

@@ -1,6 +1,8 @@
 import type { Article, Category, SiteConfig, GlobalConfig, StrapiResponse } from './types';
 
 const STRAPI_URL = import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337';
+// Public URL is what the browser uses for images — falls back to same origin in production
+const STRAPI_PUBLIC_URL = import.meta.env.VITE_STRAPI_PUBLIC_URL || STRAPI_URL;
 
 async function fetchApi<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
 	const url = new URL(`/api${endpoint}`, STRAPI_URL);
@@ -17,7 +19,7 @@ async function fetchApi<T>(endpoint: string, params?: Record<string, string>): P
 export function getImageUrl(image: { url: string } | null | undefined): string {
 	if (!image?.url) return '/images/placeholder.svg';
 	if (image.url.startsWith('http')) return image.url;
-	return `${STRAPI_URL}${image.url}`;
+	return `${STRAPI_PUBLIC_URL}${image.url}`;
 }
 
 export function getWhatsAppUrl(phone: string, message?: string): string {
@@ -37,6 +39,29 @@ export async function getArticles(page = 1, pageSize = 12, categorySlug?: string
 		params['filters[category][slug][$eq]'] = categorySlug;
 	}
 	return fetchApi<StrapiResponse<Article[]>>('/articles', params);
+}
+
+export async function getUpcomingEvents(limit = 10): Promise<Article[]> {
+	const today = new Date().toISOString().split('T')[0];
+	const res = await fetchApi<StrapiResponse<Article[]>>('/articles', {
+		'populate[0]': 'cover',
+		'populate[1]': 'category',
+		'filters[eventDate][$gte]': today,
+		'sort[0]': 'eventDate:asc',
+		'pagination[pageSize]': String(limit),
+	});
+	return res.data ?? [];
+}
+
+export async function getArticlesWithGallery(page = 1, pageSize = 12): Promise<StrapiResponse<Article[]>> {
+	return fetchApi<StrapiResponse<Article[]>>('/articles', {
+		'populate[0]': 'cover',
+		'populate[1]': 'category',
+		'populate[2]': 'gallery',
+		'sort[0]': 'publishedAt:desc',
+		'pagination[page]': String(page),
+		'pagination[pageSize]': String(pageSize),
+	});
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
@@ -72,9 +97,27 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
 	}
 }
 
+export async function getFeaturedArticles(limit = 5): Promise<Article[]> {
+	const res = await fetchApi<StrapiResponse<Article[]>>('/articles', {
+		'filters[featured][$eq]': 'true',
+		'populate[0]': 'cover',
+		'populate[1]': 'category',
+		'populate[2]': 'featuredImage',
+		'sort[0]': 'eventDate:desc',
+		'sort[1]': 'publishedAt:desc',
+		'pagination[pageSize]': String(limit),
+	});
+	return res.data ?? [];
+}
+
 export async function getGlobalConfig(): Promise<GlobalConfig | null> {
 	try {
-		const res = await fetchApi<StrapiResponse<GlobalConfig>>('/global');
+		const res = await fetchApi<StrapiResponse<GlobalConfig>>('/global', {
+			'populate[0]': 'heroImage',
+			'populate[1]': 'certificateImage',
+			'populate[2]': 'nosotrosHeroImage',
+			'populate[3]': 'contactoHeroImage',
+		});
 		return res.data;
 	} catch {
 		return null;

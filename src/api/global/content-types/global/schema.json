@@ -26,10 +26,37 @@
       "type": "text",
       "required": true
     },
+    "heroImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
     "defaultSeo": {
       "type": "component",
       "repeatable": false,
       "component": "shared.seo"
+    },
+    "certificateImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "puntoDeCulturaLink": {
+      "type": "string"
+    },
+    "nosotrosHeroImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "contactoHeroImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
     }
   }
 }

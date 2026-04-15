@@ -85,7 +85,7 @@ async function uploadFile(filePath, name) {
 }
 
 function parseMarkdownArticle(filePath) {
-  const raw = fs.readFileSync(filePath, 'utf8');
+  const raw = fs.readFileSync(filePath, 'utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const frontmatterMatch = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!frontmatterMatch) return null;
 
@@ -144,42 +144,42 @@ function markdownToHtml(md) {
   return html;
 }
 
+// Map old article categories to the 5 official categories
+const CATEGORY_MAP = {
+  'Teatro': 'Teatro',
+  'Música': 'Música',
+  'Arte y Talleres': 'Arte',
+  'Charlas': 'Charlas',
+  'Festivales': 'Festivales',
+  'Formación Cultural': 'Charlas',
+  'Identidad y Patrimonio': 'Charlas',
+  'Comunidad': 'Festivales',
+  'Niños y Familia': 'Festivales',
+  'Eventos Culturales': 'Festivales',
+};
+
+const CATEGORIES = [
+  { name: 'Teatro', slug: 'teatro', description: 'Producciones y obras en vivo' },
+  { name: 'Música', slug: 'musica', description: 'Conciertos y recitales' },
+  { name: 'Arte', slug: 'arte', description: 'Exposiciones y talleres' },
+  { name: 'Charlas', slug: 'charlas', description: 'Conversatorios culturales' },
+  { name: 'Festivales', slug: 'festivales', description: 'Eventos y celebraciones' },
+];
+
 async function importCategories() {
-  // Collect unique categories from markdown articles
-  const categorySet = new Set();
-  const files = fs.readdirSync(ARTICLES_DIR).filter(f => f.endsWith('.md'));
-
-  for (const file of files) {
-    const article = parseMarkdownArticle(path.join(ARTICLES_DIR, file));
-    if (article && article.category) {
-      categorySet.add(article.category);
-    }
-  }
-
-  // Also add the three main categories from the plan
-  categorySet.add('Charlas');
-  categorySet.add('Teatro');
-  categorySet.add('Eventos Culturales');
-
   const categoryMap = {};
-  for (const name of categorySet) {
-    const slug = name.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
-
+  for (const cat of CATEGORIES) {
     const entry = await strapi.documents('api::category.category').create({
-      data: {
-        name,
-        slug,
-        description: `Artículos sobre ${name}`,
-      },
+      data: cat,
     });
-    categoryMap[name] = entry;
-    console.log(`  Category: ${name}`);
+    categoryMap[cat.name] = entry;
+    console.log(`  Category: ${cat.name}`);
   }
-
   return categoryMap;
+}
+
+function resolveCategory(articleCategory) {
+  return CATEGORY_MAP[articleCategory] || 'Festivales';
 }
 
 async function importArticles(categoryMap) {
@@ -209,10 +209,15 @@ async function importArticles(categoryMap) {
       }
     }
 
-    // Find category
-    const category = article.category && categoryMap[article.category]
-      ? categoryMap[article.category]
-      : null;
+    // Resolve to one of the 5 official categories
+    const resolvedCatName = article.category ? resolveCategory(article.category) : 'Festivales';
+    const category = categoryMap[resolvedCatName] || null;
+
+    // Merge old category name into tags if it differs from resolved
+    let tags = article.tags || '';
+    if (article.category && article.category !== resolvedCatName) {
+      tags = tags ? `${article.category}, ${tags}` : article.category;
+    }
 
     const entryData = {
       title: article.title || filePrefix,
@@ -220,22 +225,26 @@ async function importArticles(categoryMap) {
       content: htmlContent,
       excerpt: article.excerpt || '',
       metaDescription: article.meta_description || '',
-      tags: article.tags || '',
-      publishedAt: article.date ? new Date(article.date).toISOString() : new Date().toISOString(),
+      tags,
     };
 
     if (cover) {
       entryData.cover = cover.id;
     }
     if (category) {
-      entryData.category = category.id;
+      entryData.category = { documentId: category.documentId };
     }
 
     try {
-      await strapi.documents('api::article.article').create({
+      const created = await strapi.documents('api::article.article').create({
         data: entryData,
-        status: 'published',
       });
+      // Publish the article
+      if (created && created.documentId) {
+        await strapi.documents('api::article.article').publish({
+          documentId: created.documentId,
+        });
+      }
       imported++;
       console.log(`  Article ${imported}: ${entryData.title.substring(0, 60)}...`);
     } catch (error) {
@@ -249,13 +258,13 @@ async function importArticles(categoryMap) {
 async function importSiteConfig() {
   await strapi.documents('api::site-config.site-config').create({
     data: {
-      whatsappNumber: '51999999999',
+      whatsappNumber: '51920779580',
       whatsappMessage: 'Hola, me gustaría obtener información sobre los eventos de Casona Texao.',
       address: 'Calle Puente Grau 108, Cercado, Arequipa, Perú',
       googleMapsPlaceId: 'ChIJZXT4EQBLQpERst-1U1zGOr4',
       tagline: 'Donde convergen el arte, la cultura y la música',
-      socialFacebook: 'https://www.facebook.com/casonatexao',
-      socialInstagram: 'https://www.instagram.com/casonatexao',
+      socialFacebook: 'https://www.facebook.com/profile.php?id=61571843819365',
+      socialInstagram: 'https://www.instagram.com/casona_texao',
     },
   });
   console.log('  Site config created');

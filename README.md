@@ -1,61 +1,79 @@
-# 🚀 Getting started with Strapi
+# Casona Texao — Centro Cultural
 
-Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
+SvelteKit frontend + Strapi CMS for the Casona Texao cultural center website.
 
-### `develop`
+## Quick Start
 
-Start your Strapi application with autoReload enabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-develop)
-
-```
+```bash
+# Backend (Strapi) — from project root
 npm run develop
-# or
-yarn develop
+
+# Frontend (SvelteKit) — from /frontend
+cd frontend
+npm run dev
 ```
 
-### `start`
+## Strapi Dashboard — Content Guide
 
-Start your Strapi application with autoReload disabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-start)
+### Global Settings (Single Type)
 
-```
-npm run start
-# or
-yarn start
-```
+Found at: **Content Manager → Global**
 
-### `build`
+| Field | Where it appears | Recommended size |
+|-------|-----------------|-----------------|
+| `heroImage` | Landing page hero (fallback if no featured articles) | **1920×800 px** (21:9) |
+| `nosotrosHeroImage` | Nosotros page hero | **1920×800 px** (21:9) |
+| `contactoHeroImage` | Contacto page hero | **1920×800 px** (21:9) |
+| `certificateImage` | RENTOCA certificate on landing page | **800×1100 px** (A4 portrait) |
+| `puntoDeCulturaLink` | "Ver resolución oficial" link on landing | URL string |
 
-Build your admin panel. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-build)
+### Article Fields (Collection Type)
 
-```
+Found at: **Content Manager → Article**
+
+| Field | Where it appears | Recommended size |
+|-------|-----------------|-----------------|
+| `cover` | Blog listing cards, blog post hero, event cards | **1200×750 px** (16:10) |
+| `featuredImage` | Featured carousel on landing (falls back to `cover` if empty) | **1920×820 px** (21:9) |
+| `featured` | Toggle ON to show the article in the landing page carousel | Boolean (checkbox) |
+
+> **Featured carousel cap**: Only **5 featured articles** are allowed at a time. If you mark a 6th article as featured, the oldest one is **automatically unfeatured** in Strapi — its `featured` checkbox will turn off.
+| `gallery` | Photo gallery on the blog post detail page | **1200×1200 px** (1:1) or any |
+| `eventDate` / `eventTime` | "Eventos del Mes" section, event badge on cards | Date / Time |
+
+### Image Size Guidelines
+
+| Context | Aspect Ratio | Minimum Size | Max File Size |
+|---------|-------------|-------------|---------------|
+| Hero images (all pages) | 21:9 | 1920 × 800 px | ~500 KB (JPG/WebP) |
+| Featured carousel slides | 21:9 | 1920 × 820 px | ~500 KB |
+| Blog cover / event cards | 16:10 | 1200 × 750 px | ~300 KB |
+| Gallery photos | Any | 1200 × 1200 px | ~400 KB |
+| RENTOCA certificate | A4 portrait | 800 × 1100 px | ~200 KB |
+
+> **Tip**: Use WebP format for best quality/size ratio. JPG is also fine.
+
+### Toggling Hidden Sections
+
+The following sections are hidden by default. To show them, change `showTeam = false` to `true` in:
+- `frontend/src/routes/+page.svelte` (landing page staff section)
+- `frontend/src/routes/nosotros/+page.svelte` (nosotros staff section)
+
+Aliados (partners) section is controlled by the `visible` prop on `<Aliados />` — pass `visible={true}` to show it.
+
+## Deployment
+
+```bash
+# Build Strapi admin
 npm run build
-# or
-yarn build
+
+# Build SvelteKit frontend
+cd frontend
+npm run build
 ```
 
-## ⚙️ Deployment
+## ⚙️ Stack
 
-Strapi gives you many possible deployment options for your project including [Strapi Cloud](https://cloud.strapi.io). Browse the [deployment section of the documentation](https://docs.strapi.io/dev-docs/deployment) to find the best solution for your use case.
-
-```
-yarn strapi deploy
-```
-
-## 📚 Learn more
-
-- [Resource center](https://strapi.io/resource-center) - Strapi resource center.
-- [Strapi documentation](https://docs.strapi.io) - Official Strapi documentation.
-- [Strapi tutorials](https://strapi.io/tutorials) - List of tutorials made by the core team and the community.
-- [Strapi blog](https://strapi.io/blog) - Official Strapi blog containing articles made by the Strapi team and the community.
-- [Changelog](https://strapi.io/changelog) - Find out about the Strapi product updates, new features and general improvements.
-
-Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/strapi). Your feedback and contributions are welcome!
-
-## ✨ Community
-
-- [Discord](https://discord.strapi.io) - Come chat with the Strapi community including the core team.
-- [Forum](https://forum.strapi.io/) - Place to discuss, ask questions and find answers, show your Strapi project and get feedback or just talk with other Community members.
-- [Awesome Strapi](https://github.com/strapi/awesome-strapi) - A curated list of awesome things related to Strapi.
-
----
-
-<sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+- **Backend**: Strapi v5 (SQLite dev / PostgreSQL prod)
+- **Frontend**: SvelteKit + TailwindCSS
+- **Hosting**: Docker-ready (see `Dockerfile` and `docker-compose.yml`)

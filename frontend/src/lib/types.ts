@@ -38,6 +38,10 @@ export interface Article {
 	cover: StrapiImage | null;
 	gallery: StrapiImage[] | null;
 	category: Category | null;
+	eventDate: string | null;
+	eventTime: string | null;
+	featured: boolean;
+	featuredImage: StrapiImage | null;
 	publishedAt: string;
 	createdAt: string;
 }
@@ -57,6 +61,11 @@ export interface GlobalConfig {
 	siteName: string;
 	siteDescription: string;
 	favicon: StrapiImage | null;
+	heroImage: StrapiImage | null;
+	certificateImage: StrapiImage | null;
+	puntoDeCulturaLink: string | null;
+	nosotrosHeroImage: StrapiImage | null;
+	contactoHeroImage: StrapiImage | null;
 }
 
 export interface StrapiPagination {
