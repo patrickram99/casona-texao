@@ -8,10 +8,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install --legacy-peer-deps --omit=dev
 
+# Only copy dist/ (compiled JS) — NOT config/ or src/ (TypeScript source)
 COPY dist ./dist
 COPY public ./public
-COPY config ./config
-COPY src ./src
 COPY data ./data
 COPY scripts ./scripts
 COPY favicon.png ./
