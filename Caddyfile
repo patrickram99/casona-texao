@@ -1,37 +1,20 @@
-# Replace YOUR_DOMAIN with your actual domain (e.g., casonatexao.com)
-# For testing without a domain, use :80 instead of the domain name
-
 {$DOMAIN:localhost} {
-	# Frontend - main site
+	# Everything Strapi needs — admin, API, uploads, internal routes
+	@strapi {
+		path /admin /admin/*
+		path /api/*
+		path /uploads/*
+		path /content-manager/*
+		path /content-type-builder/*
+		path /i18n/*
+		path /_health
+	}
+	handle @strapi {
+		reverse_proxy cms:1337
+	}
+
+	# Frontend - everything else
 	handle {
 		reverse_proxy frontend:3000
-	}
-
-	# Strapi API
-	handle /api/* {
-		reverse_proxy cms:1337
-	}
-
-	# Strapi admin panel
-	handle /admin/* {
-		reverse_proxy cms:1337
-	}
-
-	# Strapi uploads (images)
-	handle /uploads/* {
-		reverse_proxy cms:1337
-	}
-
-	# Strapi i18n and content-manager (admin internal routes)
-	handle /content-manager/* {
-		reverse_proxy cms:1337
-	}
-
-	handle /i18n/* {
-		reverse_proxy cms:1337
-	}
-
-	handle /content-type-builder/* {
-		reverse_proxy cms:1337
 	}
 }
