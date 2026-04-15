@@ -10,6 +10,10 @@ RUN npm install --legacy-peer-deps --omit=dev
 
 COPY dist ./dist
 COPY config/*.js ./config/
+
+# Strapi v5 serves admin from node_modules path — copy build there
+RUN mkdir -p /app/node_modules/@strapi/admin/dist/server/server/build && \
+    cp -r /app/dist/build/* /app/node_modules/@strapi/admin/dist/server/server/build/
 COPY public ./public
 COPY data ./data
 COPY scripts ./scripts
