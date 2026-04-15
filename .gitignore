@@ -126,7 +126,7 @@ coverage
 license.txt
 exports
 .strapi
-dist
+# dist - kept in git for VM deployment (Strapi build needs too much RAM)
 build
 .strapi-updater.json
 .strapi-cloud.json

@@ -1,0 +1,74 @@
+{
+    "kind": "collectionType",
+    "collectionName": "articles",
+    "info": {
+        "singularName": "article",
+        "pluralName": "articles",
+        "displayName": "Article",
+        "description": "Blog articles for Casona Texao"
+    },
+    "options": {
+        "draftAndPublish": true
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "title": {
+            "type": "string",
+            "required": true
+        },
+        "slug": {
+            "type": "uid",
+            "targetField": "title"
+        },
+        "content": {
+            "type": "richtext"
+        },
+        "excerpt": {
+            "type": "text"
+        },
+        "metaDescription": {
+            "type": "text"
+        },
+        "cover": {
+            "type": "media",
+            "multiple": false,
+            "required": false,
+            "allowedTypes": ["images"]
+        },
+        "gallery": {
+            "type": "media",
+            "multiple": true,
+            "required": false,
+            "allowedTypes": ["images"]
+        },
+        "category": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "api::category.category",
+            "inversedBy": "articles"
+        },
+        "tags": {
+            "type": "text"
+        },
+        "eventDate": {
+            "type": "date"
+        },
+        "eventTime": {
+            "type": "time"
+        },
+        "blocks": {
+            "type": "dynamiczone",
+            "components": ["shared.media", "shared.quote", "shared.rich-text", "shared.slider"]
+        },
+        "featured": {
+            "type": "boolean",
+            "default": false
+        },
+        "featuredImage": {
+            "type": "media",
+            "multiple": false,
+            "required": false,
+            "allowedTypes": ["images"]
+        }
+    }
+}
