@@ -1,5 +1,5 @@
 {$DOMAIN:localhost} {
-	@strapi path /admin /admin/* /api/* /uploads/* /content-manager/* /content-type-builder/* /i18n/* /_health
+	@strapi path /admin /admin/* /api/* /upload/* /uploads/* /content-manager/* /content-type-builder/* /i18n/* /_health /users-permissions/*
 
 	handle @strapi {
 		reverse_proxy cms:1337

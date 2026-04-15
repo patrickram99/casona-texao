@@ -29,7 +29,6 @@ services:
     restart: unless-stopped
     environment:
       - VITE_STRAPI_URL=http://cms:1337
-      - VITE_STRAPI_PUBLIC_URL=
       - NODE_ENV=production
     depends_on:
       - cms

@@ -5,10 +5,7 @@ const STRAPI_URL = typeof process !== 'undefined' && process.env?.VITE_STRAPI_UR
 	? process.env.VITE_STRAPI_URL
 	: (import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337');
 
-// For image URLs sent to the browser — empty string = relative URLs (/uploads/...)
-const STRAPI_PUBLIC_URL = typeof process !== 'undefined' && process.env?.VITE_STRAPI_PUBLIC_URL !== undefined
-	? process.env.VITE_STRAPI_PUBLIC_URL
-	: (import.meta.env.VITE_STRAPI_PUBLIC_URL ?? STRAPI_URL);
+// Image URLs are always relative — Caddy/proxy handles /uploads/*
 
 async function fetchApi<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
 	const url = new URL(`/api${endpoint}`, STRAPI_URL);
@@ -25,7 +22,7 @@ async function fetchApi<T>(endpoint: string, params?: Record<string, string>): P
 export function getImageUrl(image: { url: string } | null | undefined): string {
 	if (!image?.url) return '/images/placeholder.svg';
 	if (image.url.startsWith('http')) return image.url;
-	return `${STRAPI_PUBLIC_URL}${image.url}`;
+	return image.url;
 }
 
 export function getWhatsAppUrl(phone: string, message?: string): string {
