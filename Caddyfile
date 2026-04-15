@@ -1,19 +1,10 @@
 {$DOMAIN:localhost} {
-	# Everything Strapi needs — admin, API, uploads, internal routes
-	@strapi {
-		path /admin /admin/*
-		path /api/*
-		path /uploads/*
-		path /content-manager/*
-		path /content-type-builder/*
-		path /i18n/*
-		path /_health
-	}
+	@strapi path /admin /admin/* /api/* /uploads/* /content-manager/* /content-type-builder/* /i18n/* /_health
+
 	handle @strapi {
 		reverse_proxy cms:1337
 	}
 
-	# Frontend - everything else
 	handle {
 		reverse_proxy frontend:3000
 	}
