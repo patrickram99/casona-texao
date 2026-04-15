@@ -5,10 +5,10 @@ const STRAPI_URL = typeof process !== 'undefined' && process.env?.VITE_STRAPI_UR
 	? process.env.VITE_STRAPI_URL
 	: (import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337');
 
-// For image URLs sent to the browser — use empty string in production (Caddy proxies /uploads/*)
-const STRAPI_PUBLIC_URL = typeof process !== 'undefined' && process.env?.VITE_STRAPI_PUBLIC_URL
+// For image URLs sent to the browser — empty string = relative URLs (/uploads/...)
+const STRAPI_PUBLIC_URL = typeof process !== 'undefined' && process.env?.VITE_STRAPI_PUBLIC_URL !== undefined
 	? process.env.VITE_STRAPI_PUBLIC_URL
-	: (import.meta.env.VITE_STRAPI_PUBLIC_URL || STRAPI_URL);
+	: (import.meta.env.VITE_STRAPI_PUBLIC_URL ?? STRAPI_URL);
 
 async function fetchApi<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
 	const url = new URL(`/api${endpoint}`, STRAPI_URL);
