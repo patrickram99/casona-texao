@@ -127,6 +127,7 @@ license.txt
 exports
 .strapi
 # dist - kept in git for VM deployment (Strapi build needs too much RAM)
-build
+# build - only ignore root-level build, not dist/build/
+/build
 .strapi-updater.json
 .strapi-cloud.json
