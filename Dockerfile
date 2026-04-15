@@ -17,6 +17,7 @@ RUN mkdir -p /app/node_modules/@strapi/admin/dist/server/server/build && \
 COPY src ./src
 COPY public ./public
 COPY data ./data
+COPY blog_output ./blog_output
 COPY scripts ./scripts
 COPY favicon.png ./
 

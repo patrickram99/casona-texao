@@ -2,6 +2,5 @@ node_modules
 .tmp
 .cache
 frontend
-blog_output
 .git
 *.md
