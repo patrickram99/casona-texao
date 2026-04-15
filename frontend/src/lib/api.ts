@@ -1,8 +1,13 @@
 import type { Article, Category, SiteConfig, GlobalConfig, StrapiResponse } from './types';
 
-const STRAPI_URL = import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337';
-// Public URL is what the browser uses for images — falls back to same origin in production
-const STRAPI_PUBLIC_URL = import.meta.env.VITE_STRAPI_PUBLIC_URL || STRAPI_URL;
+// Use process.env for runtime (adapter-node), fallback to import.meta.env for dev
+const STRAPI_URL = typeof process !== 'undefined' && process.env?.VITE_STRAPI_URL
+	? process.env.VITE_STRAPI_URL
+	: (import.meta.env.VITE_STRAPI_URL || 'http://localhost:1337');
+
+const STRAPI_PUBLIC_URL = typeof process !== 'undefined' && process.env?.VITE_STRAPI_PUBLIC_URL
+	? process.env.VITE_STRAPI_PUBLIC_URL
+	: (import.meta.env.VITE_STRAPI_PUBLIC_URL || STRAPI_URL);
 
 async function fetchApi<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
 	const url = new URL(`/api${endpoint}`, STRAPI_URL);
