@@ -8,8 +8,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install --legacy-peer-deps --omit=dev
 
-# Only copy dist/ (compiled JS) — NOT config/ or src/ (TypeScript source)
 COPY dist ./dist
+COPY config/*.js ./config/
 COPY public ./public
 COPY data ./data
 COPY scripts ./scripts
