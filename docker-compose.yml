@@ -17,6 +17,8 @@ services:
       - TRANSFER_TOKEN_SALT=${TRANSFER_TOKEN_SALT}
       - JWT_SECRET=${JWT_SECRET}
       - PUBLIC_URL=${PUBLIC_URL:-http://localhost:1337}
+      - DATABASE_CLIENT=sqlite
+      - DATABASE_FILENAME=.tmp/data.db
     networks:
       - internal
 
