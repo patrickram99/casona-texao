@@ -18,7 +18,12 @@
       "Bash(powershell -Command \"\\(Invoke-RestMethod -Uri ''http://localhost:1337/api/articles?populate[0]=category&pagination[pageSize]=25''\\).data | ForEach-Object { [PSCustomObject]@{id=$_id; title=$_title.Substring\\(0, [Math]::Min\\(50, $_title.Length\\)\\); category=if\\($_category\\){$_category.name}else{''NULL''} } } | Format-Table -AutoSize\")",
       "Bash(powershell -Command \"$r = Invoke-RestMethod -Uri ''http://localhost:1337/api/articles?populate[0]=category&pagination[pageSize]=25''; foreach \\($a in $r.data\\) { $cat = if \\($a.category\\) { $a.category.name } else { ''NONE'' }; Write-Host \\($a.id.ToString\\(\\).PadRight\\(4\\) + $cat.PadRight\\(15\\) + $a.title.Substring\\(0,50\\)\\) }\")",
       "Bash(powershell -Command \"\\(Invoke-RestMethod ''http://localhost:1337/api/articles?populate[0]=category&pagination[pageSize]=25&fields[0]=title''\\).data | Select-Object id, @{N=''cat'';E={if\\($_''category''\\){''yes''}else{''NO''}}}\")",
-      "Bash(node -e \"fetch\\(''http://localhost:1337/api/articles?populate[0]=category&pagination[pageSize]=25&fields[0]=title''\\).then\\(r=>r.json\\(\\)\\).then\\(d=>{d.data.forEach\\(a=>{console.log\\(a.id, a.category?a.category.name:''NO_CAT'', a.title.substring\\(0,50\\)\\)}\\)}\\)\")"
+      "Bash(node -e \"fetch\\(''http://localhost:1337/api/articles?populate[0]=category&pagination[pageSize]=25&fields[0]=title''\\).then\\(r=>r.json\\(\\)\\).then\\(d=>{d.data.forEach\\(a=>{console.log\\(a.id, a.category?a.category.name:''NO_CAT'', a.title.substring\\(0,50\\)\\)}\\)}\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\);const l=require\\('./package-lock.json'\\);console.log\\('package.json exists:', !!p\\);console.log\\('lockfile version:', l.lockfileVersion\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); const deps={...p.dependencies,...p.devDependencies}; ['zod','picomatch','typescript'].forEach\\(k=>{if\\(deps[k]\\)console.log\\(k,deps[k]\\)}\\)\")",
+      "Bash(npm ls:*)",
+      "Bash(rm -rf node_modules)",
+      "Bash(npm ci:*)"
     ]
   }
 }
