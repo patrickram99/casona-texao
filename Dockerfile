@@ -14,7 +14,8 @@ COPY config/*.js ./config/
 # Strapi v5 serves admin from node_modules path — copy build there
 RUN mkdir -p /app/node_modules/@strapi/admin/dist/server/server/build && \
     cp -r /app/dist/build/* /app/node_modules/@strapi/admin/dist/server/server/build/
-COPY src ./src
+# Copy compiled JS source (not TypeScript) + JSON schemas
+COPY dist/src ./src
 COPY public ./public
 COPY data ./data
 COPY blog_output ./blog_output
